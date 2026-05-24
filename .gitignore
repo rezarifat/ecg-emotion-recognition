@@ -1,13 +1,1 @@
-"old/" 
-"__pycache__/" 
-"uploads/" 
-"*.pyc" 
-"report_output.pdf" 
-"chart_*.png" 
-"old/" 
-"__pycache__/" 
-"uploads/" 
-"*.pyc" 
-"report_output.pdf" 
-"chart_*.png" 
-__pycache__/  *.pyc  uploads/  report_output.pdf  chart_*.png  sample_ecg.png  class_dist.png  old/ 
+__pycache__/echo *.pycecho uploads/echo report_output.pdfecho chart_*.pngecho sample_ecg.pngecho class_dist.pngecho old/echo *.npyecho .env
