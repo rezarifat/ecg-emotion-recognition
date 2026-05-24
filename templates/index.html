@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECG Emotion Detector</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      background: #f0f4f8;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #1a5276, #2980b9);
+      color: white;
+      padding: 50px 20px 40px;
+      text-align: center;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+    .hero p  { font-size: 1rem; opacity: 0.85; margin: 0; }
+
+    /* Cards */
+    .card {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      background: white;
+    }
+
+    /* Upload area */
+    .upload-area {
+      border: 2px dashed #2980b9;
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      background: #f8fbff;
+    }
+    .upload-area:hover { background: #e8f4fd; }
+    .upload-icon { font-size: 3rem; color: #2980b9; }
+
+    /* Analyse button */
+    .btn-analyse {
+      background: #2980b9;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-analyse:hover:not(:disabled) { background: #1a6fa0; }
+    .btn-analyse:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* Spinner */
+    #spinner { display: none; text-align: center; margin-top: 16px; }
+
+    /* Emotion result box */
+    .emotion-box {
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .emotion-name  { font-size: 2rem; font-weight: 700; color: white; }
+    .emotion-conf  { font-size: 1rem; color: rgba(255,255,255,0.9); margin-top: 4px; }
+    .emotion-desc  { font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 6px; font-style: italic; }
+
+    /* Probability bars */
+    .prob-label { font-size: 0.85rem; }
+    .prob-track {
+      background: #eee;
+      border-radius: 6px;
+      height: 22px;
+      overflow: hidden;
+    }
+    .prob-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.6s ease;
+      min-width: 4px;
+    }
+
+    /* HRV table */
+    .hrv-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .hrv-table th {
+      background: #2980b9;
+      color: white;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .hrv-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+    .hrv-table tr:nth-child(even) td { background: #f8f9fa; }
+
+    /* Signal info */
+    .info-row {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    .info-badge {
+      background: #f0f4f8;
+      border-radius: 8px;
+      padding: 6px 12px;
+      flex: 1;
+      text-align: center;
+    }
+    .info-badge span { display: block; font-weight: 700; color: #2980b9; font-size: 1rem; }
+
+    /* Download button */
+    .btn-download {
+      display: block;
+      background: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      width: 100%;
+      text-align: center;
+      text-decoration: none;
+      margin-top: 20px;
+      transition: background 0.2s;
+    }
+    .btn-download:hover { background: #1e8449; color: white; }
+
+    /* Section headers inside result */
+    .result-section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #2980b9;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 20px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e8f4fd;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>ECG Emotion Detector</h1>
+  <p>Upload an ECG file to detect emotional state using deep learning and HRV analysis</p>
+</div>
+
+<div class="container py-4" style="max-width: 720px;">
+
+  <!-- Upload Card -->
+  <div class="card p-4 mb-4">
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">&#128193;</div>
+      <h5 class="mt-2 mb-1">Click to select ECG file</h5>
+      <p class="text-muted small mb-0">Supports CSV (.csv) format</p>
+      <input type="file" id="fileInput" accept=".dcm,.csv"
+             style="display:none" onchange="handleFile(this)">
+    </div>
+
+    <div id="fileName" class="text-center text-muted mt-2 small"></div>
+
+    <button id="analyseBtn" class="btn-analyse" onclick="uploadFile()" disabled>
+      Analyse ECG
+    </button>
+
+    <div id="spinner">
+      <div class="spinner-border text-primary mt-3"></div>
+      <p class="text-muted mt-2 small">Analysing ECG signal, please wait...</p>
+    </div>
+  </div>
+
+  <!-- Result Card -->
+  <div id="resultCard" class="card p-4 d-none">
+
+    <!-- Emotion box -->
+    <div id="emotionBox" class="emotion-box">
+      <div class="emotion-name" id="emotionLabel"></div>
+      <div class="emotion-conf"  id="confidenceLabel"></div>
+      <div class="emotion-desc"  id="descLabel"></div>
+    </div>
+
+    <!-- Signal info -->
+    <div class="info-row">
+      <div class="info-badge">
+        Sampling Rate
+        <span id="srLabel">-</span>
+      </div>
+      <div class="info-badge">
+        Signal Duration
+        <span id="durLabel">-</span>
+      </div>
+      <div class="info-badge">
+        Heart Rate
+        <span id="hrLabel">-</span>
+      </div>
+    </div>
+
+    <!-- Probabilities -->
+    <div class="result-section-title">Emotion Probabilities</div>
+    <div id="probBars"></div>
+
+    <!-- HRV -->
+    <div class="result-section-title">HRV Features</div>
+    <table class="hrv-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Value</th>
+          <th>Normal Range</th>
+        </tr>
+      </thead>
+      <tbody id="hrvBody"></tbody>
+    </table>
+
+    <!-- Download -->
+    <a href="/report" class="btn-download">Download Full PDF Report</a>
+  </div>
+
+</div>
+
+<script>
+const BAR_COLORS = {
+  "Happy/Excited":  "#F1C40F",
+  "Angry/Stressed": "#E74C3C",
+  "Calm/Relaxed":   "#2ECC71",
+  "Sad/Bored":      "#3498DB",
+};
+
+const EMOTION_BG = {
+  "Happy/Excited":  "linear-gradient(135deg, #f39c12, #f1c40f)",
+  "Angry/Stressed": "linear-gradient(135deg, #c0392b, #e74c3c)",
+  "Calm/Relaxed":   "linear-gradient(135deg, #27ae60, #2ecc71)",
+  "Sad/Bored":      "linear-gradient(135deg, #2471a3, #3498db)",
+};
+
+const NORMAL_RANGES = {
+  "Mean RR (ms)":     "600 - 1200 ms",
+  "SDNN (ms)":        "20 - 150 ms",
+  "RMSSD (ms)":       "15 - 100 ms",
+  "Heart Rate (bpm)": "60 - 100 bpm",
+  "pNN50 (%)":        "5 - 40 %",
+  "RR Range (ms)":    "50 - 400 ms",
+};
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (file) {
+    document.getElementById('fileName').textContent = `Selected: ${file.name}`;
+    document.getElementById('analyseBtn').disabled = false;
+  }
+}
+
+async function uploadFile() {
+  const file = document.getElementById('fileInput').files[0];
+  if (!file) return;
+
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('analyseBtn').disabled = true;
+  document.getElementById('resultCard').classList.add('d-none');
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res  = await fetch("/predict", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (data.error) {
+      alert("Error: " + data.error);
+      return;
+    }
+
+    // Emotion box
+    document.getElementById("emotionBox").style.background = EMOTION_BG[data.emotion] || "#2980b9";
+    document.getElementById("emotionLabel").textContent    = data.emotion;
+    document.getElementById("confidenceLabel").textContent = `Confidence: ${data.confidence}%`;
+    document.getElementById("descLabel").textContent       = data.description;
+
+    // Signal info
+    document.getElementById("srLabel").textContent  = `${data.sampling_rate} Hz`;
+    document.getElementById("durLabel").textContent = `${data.signal_length_sec}s`;
+    const hr = data.hrv_features["Heart Rate (bpm)"];
+    document.getElementById("hrLabel").textContent  = hr ? `${hr} bpm` : "-";
+
+    // Probability bars
+    document.getElementById("probBars").innerHTML =
+      Object.entries(data.all_probs).map(([e, p]) => `
+        <div class="mb-3">
+          <div class="d-flex justify-content-between prob-label mb-1">
+            <span>${e}</span>
+            <strong>${p}%</strong>
+          </div>
+          <div class="prob-track">
+            <div class="prob-fill" style="width:${p}%; background:${BAR_COLORS[e]}"></div>
+          </div>
+        </div>
+      `).join("");
+
+    // HRV table
+    document.getElementById("hrvBody").innerHTML =
+      Object.entries(data.hrv_features).map(([k, v]) => `
+        <tr>
+          <td>${k}</td>
+          <td><strong>${v}</strong></td>
+          <td class="text-muted">${NORMAL_RANGES[k] || "-"}</td>
+        </tr>
+      `).join("");
+
+    document.getElementById("resultCard").classList.remove("d-none");
+    document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
+
+  } catch (e) {
+    alert("Something went wrong: " + e.message);
+  } finally {
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('analyseBtn').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
