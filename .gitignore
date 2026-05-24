@@ -10,3 +10,4 @@
 "*.pyc" 
 "report_output.pdf" 
 "chart_*.png" 
+__pycache__/  *.pyc  uploads/  report_output.pdf  chart_*.png  sample_ecg.png  class_dist.png  old/ 
